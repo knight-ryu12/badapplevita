@@ -2,8 +2,8 @@
 #include <psp2/kernel/sysmem.h>
 #include "monorale.h"
 
-#define DISPLAY_WIDTH 960
-#define DISPLAY_HEIGHT 544
+#define DISPLAY_WIDTH 640
+#define DISPLAY_HEIGHT 368
 
 static inline uint16_t *monorale_frame(monorale_hdr *hdr, size_t frame)
 {
@@ -61,7 +61,6 @@ monorale_hdr *monorale_init(const char *path)
 int monoraleThread(SceSize args, void *argp) {
 	printf("I'm in.\n");
 	void* base;
-
 	SceKernelAllocMemBlockOpt opt = {0};
 	opt.size = sizeof(opt);
 	opt.attr = 0x00000004;
@@ -69,9 +68,16 @@ int monoraleThread(SceSize args, void *argp) {
 	SceUID memb = sceKernelAllocMemBlock("fb",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,256*1024*2,&opt);
 	sceKernelGetMemBlockBase(memb,&base);
 	printf("malloc completed!\n");
-
-	SceDisplayFrameBuf buf = {sizeof(SceDisplayFrameBuf),base,DISPLAY_WIDTH,0,DISPLAY_WIDTH,DISPLAY_HEIGHT};
-	//sceDisplaySetFrameBuf(NULL,SCE_DISPLAY_SETBUF_IMMEDIATE);
+	
+	SceDisplayFrameBuf buf;
+	memset(&buf,0, sizeof(SceDisplayFrameBuf));
+       	buf.size = sizeof(SceDisplayFrameBuf);
+	buf.base = base;
+	buf.pitch = DISPLAY_WIDTH;
+	buf.pixelformat = 0;
+	buf.width = DISPLAY_WIDTH;
+	buf.height = DISPLAY_HEIGHT;
+	sceDisplaySetFrameBuf(&buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
 	int frame = 0;
 	monorale_hdr **tmp = (monorale_hdr**)argp;
 	monorale_hdr *hdr = *tmp;
