@@ -9,7 +9,6 @@ static inline uint16_t *monorale_frame(monorale_hdr *hdr, size_t frame)
 {
 	monorale_frameinf *info;
 	if (frame >= hdr->framecnt) return NULL;
-
 	info = &hdr->inf[frame];
 	return (uint16_t*)((char*)hdr + info->offset);
 }
@@ -41,6 +40,7 @@ void monorale_doframe(monorale_hdr *hdr, size_t frame, uint16_t *fb)
 
 monorale_hdr *monorale_init(const char *path)
 {
+	printf("Monorale INIT\n");
 	size_t monolen;
 	monorale_hdr *ret;
 	FILE *f = fopen(path, "rb");
@@ -64,8 +64,8 @@ int monoraleThread(SceSize args, void *argp) {
 	SceKernelAllocMemBlockOpt opt = {0};
 	opt.size = sizeof(opt);
 	opt.attr = 0x00000004;
-	opt.alignment = 256*1024;
-	SceUID memb = sceKernelAllocMemBlock("fb",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,256*1024*2,&opt);
+	opt.alignment = DISPLAY_WIDTH*DISPLAY_HEIGHT*2;
+	SceUID memb = sceKernelAllocMemBlock("fb",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000,&opt);
 	sceKernelGetMemBlockBase(memb,&base);
 	printf("malloc completed!\n");
 	
@@ -73,11 +73,12 @@ int monoraleThread(SceSize args, void *argp) {
 	memset(&buf,0, sizeof(SceDisplayFrameBuf));
        	buf.size = sizeof(SceDisplayFrameBuf);
 	buf.base = base;
-	buf.pitch = DISPLAY_WIDTH;
+	buf.pitch = 640;
 	buf.pixelformat = 0;
 	buf.width = DISPLAY_WIDTH;
 	buf.height = DISPLAY_HEIGHT;
-	sceDisplaySetFrameBuf(&buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
+	//sceDisplaySetFrameBuf(&buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
+
 	int frame = 0;
 	monorale_hdr **tmp = (monorale_hdr**)argp;
 	monorale_hdr *hdr = *tmp;
@@ -86,12 +87,14 @@ int monoraleThread(SceSize args, void *argp) {
 	printf("baseaddr=%p\n",base);
 	while(frame < monorale_frames(hdr)) {
 		printf("frame start\n");
-		sceDisplayWaitVblankStart();
+		//sceDisplayWaitVblankStart();
+		//sceDisplayWaitSetFrameBuf();
 		//sceDisplayGetFrameBuf(buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
 		monorale_doframe(hdr,frame,(uint16_t*)base);
 		printf("frame monorale\n");
 		sceDisplaySetFrameBuf(&buf,0);
 		frame++;
+		//sceDisplayWaitSetFrameBuf();
 	}
 
 	return 0;
