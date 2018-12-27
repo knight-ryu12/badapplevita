@@ -25,10 +25,17 @@ link_directories(
 add_executable(badapplevita
 	src/main.c
 	src/monorale.c
+	src/sound.c
 )
 
 target_link_libraries(badapplevita
 	SceDisplay_stub
+	SceAudio_stub
+	vorbisenc
+	vorbisfile
+	vorbis
+	ogg
+	m
 )
 
 vita_create_self(
