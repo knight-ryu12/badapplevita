@@ -88,14 +88,26 @@ int monoraleThread(SceSize args, void *argp) {
 	while(frame < monorale_frames(hdr)) {
 		printf("frame start\n");
 		//sceDisplayWaitVblankStart();
+		//sceDisplayWaitVblankStart();
 		//sceDisplayWaitSetFrameBuf();
+		/*
+		if(sceDisplayWaitVblankStart()){
+			printf("Error on DisplayWaitVblankStart()???\n");
+			break;
+		}
+		*/
 		//sceDisplayGetFrameBuf(buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
-		monorale_doframe(hdr,frame,(uint16_t*)base);
-		printf("frame monorale\n");
-		sceDisplaySetFrameBuf(&buf,0);
-		frame++;
+		monorale_doframe(hdr,frame++,(uint16_t*)base);
+		//printf("frame monorale\n");
+		if(sceDisplaySetFrameBuf(&buf,0)){
+			printf("Error on sceDisplaySetFrameBuf()\n");
+			break;
+		}
+		//frame++;
 		//sceDisplayWaitSetFrameBuf();
+		sceDisplayWaitVblankStart();
 	}
+	sceKernelCloseMemBlock(memb);
 
 	return 0;
 }
