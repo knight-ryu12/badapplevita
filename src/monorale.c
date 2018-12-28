@@ -162,9 +162,9 @@ int monoraleThread(SceSize args, void *argp) {
 	printf("baseaddrR=%p\n",base[1]);
 	SceDisplayFrameBuf* disp = NULL;
 	while(frame < monorale_frames(hdr)) {
-		disp = ((frame%2)==0)?&bufL:&bufR;
-		monorale_doframe(hdr,frame,disp->base);
-		sceDisplaySetFrameBuf(disp,1);
+		//disp = ((frame%2)==0)?&bufL:&bufR;
+		monorale_doframe(hdr,frame,bufL.base);
+		sceDisplaySetFrameBuf(&bufL,1);
 		frame++;
 		sceDisplayWaitVblankStart(); //problematic on Vita3K.
 	}
