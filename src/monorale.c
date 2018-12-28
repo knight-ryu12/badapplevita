@@ -29,22 +29,21 @@ static inline uint32_t monorale_framecnt(monorale_hdr *hdr, size_t frame)
 }
 
 /* TODO: Add hardware filling */
-void monorale_doframe(monorale_hdr *hdr, size_t frame, uint16_t *fb)
+void monorale_doframe(monorale_hdr *hdr, size_t frame, uint32_t *fb)
 {
-	printf("Doing Frame Job!\n");
+	//printf("Doing Frame Job!\n");
 	uint32_t fill_val = 0;
 	uint16_t *cmds = monorale_frame(hdr, frame);
 	size_t cmdcnt = monorale_framecnt(hdr, frame);
-	printf("%d\n",cmdcnt);
+	//printf("%d\n",cmdcnt);
 	for (size_t i = 0; i < cmdcnt; i++) {
 		size_t len_px = cmds[i];
-
 		memset(fb, fill_val, len_px << 1);
 		//printf("memset\n");
 		fb += len_px;
-		fill_val ^= 0xFFFFFFFF;
+		fill_val ^= 0x00FFFFFF; 
 	}
-	printf("Frame %d render!\n",frame);
+	//printf("Frame %d render!\n",frame);
 }
 
 monorale_hdr *monorale_init(const char *path)
@@ -58,14 +57,14 @@ monorale_hdr *monorale_init(const char *path)
 	}
 	sceClibPrintf("%s=%lldB\n",path,stat.st_size);
 	memBlockSize = (((uint32_t)stat.st_size & 0xFFFFF000)+0x1000);
-	sceClibPrintf("Need Allocate 0x%XB\n",memBlockSize);
+	sceClibPrintf("Need Allocate 0x%lXB\n",memBlockSize);
 	if(allocMemory(memBlockSize) < 0) {
 		// Alloc Failed!!!
 		sceClibPrintf("memory allocation failed???\n");
 		return NULL;
 	}
 	sceKernelGetMemBlockBase(fdata_memblock,(void**)&monorale_base);
-	sceClibPrintf("memblock_base 0x%x",monorale_base);
+	//sceClibPrintf("memblock_base 0x%X",monorale_base);
 	SceUID fd = sceIoOpen(path, SCE_O_RDONLY, 0777);
 	if(fd < 0) {
 		sceClibPrintf("File Opening failed!???\n");
@@ -84,7 +83,7 @@ int allocMemory(uint32_t monolen) {
 	fbmOpt.size = sizeof(fbmOpt);
 	fbmOpt.attr = 4;
 	fbmOpt.alignment = 256*1024;
-	fb_memblock = sceKernelAllocMemBlock("FrameBuffer CDRAM",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000, &fbmOpt);
+	fb_memblock = sceKernelAllocMemBlock("FrameBuffer CDRAM",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,DISPLAY_WIDTH*DISPLAY_HEIGHT*4, &fbmOpt);
 	sceClibPrintf("fb_memblock 0x%x\n",fb_memblock);
 	fdata_memblock = sceKernelAllocMemBlock("FrameData UMEM",SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,monolen, NULL);
 	sceClibPrintf("fdata_memblock 0x%x\n",fdata_memblock);
@@ -118,10 +117,11 @@ int monoraleThread(SceSize args, void *argp) {
 	memset(&buf,0, sizeof(SceDisplayFrameBuf));
        	buf.size = sizeof(SceDisplayFrameBuf);
 	buf.base = base;
-	buf.pitch = 640;
+	buf.pitch = DISPLAY_WIDTH;
 	buf.pixelformat = 0;
 	buf.width = DISPLAY_WIDTH;
 	buf.height = DISPLAY_HEIGHT;
+	//buf.height = 640;
 	//sceDisplaySetFrameBuf(&buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
 
 	int frame = 0;
@@ -131,7 +131,8 @@ int monoraleThread(SceSize args, void *argp) {
 	printf("%d frames\n",monorale_frames(hdr));
 	printf("baseaddr=%p\n",base);
 	while(frame < monorale_frames(hdr)) {
-		monorale_doframe(hdr,frame++,(uint16_t*)base);
+		//printf("f:%d\n",frame);
+		monorale_doframe(hdr,frame,(uint32_t*)buf.base);
 		if(sceDisplaySetFrameBuf(&buf,0)){
 			printf("Error on sceDisplaySetFrameBuf()\n");
 			break;

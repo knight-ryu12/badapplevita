@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 	monorale_hdr *hdr = monorale_init("app0:/monorale.bin");
 	
 	//Init Audio.
-	int port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN,4096,44100,1);//Stereo.
+	int port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN,4096,48000,1);//Stereo.
 	if(port<0) printf("Open Audio Failed!!!");
 	
 	SceUID vid = sceKernelCreateThread("video thread", monoraleThread, 0x40, 0x10000, 0, 0, NULL);
