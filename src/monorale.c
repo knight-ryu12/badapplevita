@@ -7,12 +7,33 @@
 
 #include "monorale.h"
 
+#define LOG_FILE "ux0:/data/monorale_video.log"
+
 #define DISPLAY_WIDTH 640
 #define DISPLAY_HEIGHT 368
-#define sceClibPrintf printf
+#define sceClibPrintf LOG
+#define printf LOG
 #define sceClibMemset memset // emulator aware.
 static SceUID fdata_memblock = 0;
-static SceUID fb_memblock = 0;
+static SceUID fb_memblock_L = 0;
+static SceUID fb_memblock_R = 0;
+
+void LOG(char* format, ...){
+	char str[512] = { 0 };
+	va_list va;
+
+	va_start(va, format);
+	vsnprintf(str, 512, format, va);
+	va_end(va);
+	
+	SceUID fd;
+	fd = sceIoOpen(LOG_FILE, SCE_O_WRONLY | SCE_O_APPEND | SCE_O_CREAT, 0777);
+	sceIoWrite(fd, str, strlen(str));
+	sceIoWrite(fd, "\n", 1);
+	sceIoClose(fd);
+#undef sceClibPrintf
+	sceClibPrintf(str); // callback
+}
 
 static inline uint16_t *monorale_frame(monorale_hdr *hdr, size_t frame)
 {
@@ -41,7 +62,7 @@ void monorale_doframe(monorale_hdr *hdr, size_t frame, uint32_t *fb)
 		memset(fb, fill_val, len_px << 1);
 		//printf("memset\n");
 		fb += len_px;
-		fill_val ^= 0x00FFFFFF; 
+		fill_val ^= 0xFFFFFFFF; 
 	}
 	//printf("Frame %d render!\n",frame);
 }
@@ -83,13 +104,14 @@ int allocMemory(uint32_t monolen) {
 	fbmOpt.size = sizeof(fbmOpt);
 	fbmOpt.attr = 4;
 	fbmOpt.alignment = 256*1024;
-	fb_memblock = sceKernelAllocMemBlock("FrameBuffer CDRAM",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,DISPLAY_WIDTH*DISPLAY_HEIGHT*4, &fbmOpt);
-	sceClibPrintf("fb_memblock 0x%x\n",fb_memblock);
+	fb_memblock_L = sceKernelAllocMemBlock("FrameBuffer CDRAM L",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000,&fbmOpt);
+	sceClibPrintf("fb_memblockL 0x%x\n",fb_memblock_L);
+	fb_memblock_R = sceKernelAllocMemBlock("FrameBuffer CDRAM R",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000,&fbmOpt);
+	sceClibPrintf("fb_memblockR 0x%x\n",fb_memblock_R);
 	fdata_memblock = sceKernelAllocMemBlock("FrameData UMEM",SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,monolen, NULL);
 	sceClibPrintf("fdata_memblock 0x%x\n",fdata_memblock);
-	if(fb_memblock < 0) {
-		return fb_memblock;
-	}
+	if(fb_memblock_L < 0) return fb_memblock_L;
+	if(fb_memblock_R < 0) return fb_memblock_R;
 	if(fdata_memblock < 0) {
 		return fdata_memblock;
 	}
@@ -98,9 +120,8 @@ int allocMemory(uint32_t monolen) {
 
 
 int monorale_deinit(){
-	if(fb_memblock > 0) {
-		sceKernelFreeMemBlock(fb_memblock);
-	}
+	if(fb_memblock_L > 0) sceKernelFreeMemBlock(fb_memblock_L);
+	if(fb_memblock_R > 0) sceKernelFreeMemBlock(fb_memblock_R);
 	if(fdata_memblock > 0) {
 		sceKernelFreeMemBlock(fdata_memblock);
 	}
@@ -111,16 +132,23 @@ int monorale_deinit(){
 
 int monoraleThread(SceSize args, void *argp) {
 	printf("I'm in.\n");
-	void* base;
-	sceKernelGetMemBlockBase(fb_memblock,&base);
-	SceDisplayFrameBuf buf;
-	memset(&buf,0, sizeof(SceDisplayFrameBuf));
-       	buf.size = sizeof(SceDisplayFrameBuf);
-	buf.base = base;
-	buf.pitch = DISPLAY_WIDTH;
-	buf.pixelformat = 0;
-	buf.width = DISPLAY_WIDTH;
-	buf.height = DISPLAY_HEIGHT;
+	void* base[2];
+	sceKernelGetMemBlockBase(fb_memblock_L,&base[0]);
+	sceKernelGetMemBlockBase(fb_memblock_R,&base[1]);
+	SceDisplayFrameBuf bufL;
+	SceDisplayFrameBuf bufR;
+	memset(&bufL,0,sizeof(SceDisplayFrameBuf));
+	memset(&bufR,0,sizeof(SceDisplayFrameBuf));
+       	bufL.size = sizeof(SceDisplayFrameBuf);
+	bufL.base = base[0];
+	bufL.pitch = 640;
+	bufL.pixelformat = 0;
+	bufL.width = 640;
+	bufL.height = 368;
+	bufR = bufL;
+	bufR.base = base[1];
+
+	//SceDisplayFrameBuf bufR;
 	//buf.height = 640;
 	//sceDisplaySetFrameBuf(&buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
 
@@ -129,11 +157,12 @@ int monoraleThread(SceSize args, void *argp) {
 	monorale_hdr *hdr = *tmp;
 	printf("Render Lv2\n");
 	printf("%d frames\n",monorale_frames(hdr));
-	printf("baseaddr=%p\n",base);
+	printf("baseaddrL=%p\n",base[0]);
+	printf("baseaddrR=%p\n",base[1]);
 	while(frame < monorale_frames(hdr)) {
 		//printf("f:%d\n",frame);
-		monorale_doframe(hdr,frame,(uint32_t*)buf.base);
-		if(sceDisplaySetFrameBuf(&buf,0)){
+		monorale_doframe(hdr,frame,frame%2==0?(uint32_t*)bufL.base:(uint32_t*)bufR.base);
+		if(sceDisplaySetFrameBuf(frame%2==0?&bufL:&bufR,1)){
 			printf("Error on sceDisplaySetFrameBuf()\n");
 			break;
 		}
