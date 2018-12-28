@@ -1,9 +1,18 @@
 #include <psp2/display.h> 
 #include <psp2/kernel/sysmem.h>
+#include <psp2/kernel/clib.h>
+#include <psp2/kernel/processmgr.h>
+#include <psp2/io/stat.h>
+#include <psp2/io/fcntl.h>
+
 #include "monorale.h"
 
 #define DISPLAY_WIDTH 640
 #define DISPLAY_HEIGHT 368
+#define sceClibPrintf printf
+#define sceClibMemset memset // emulator aware.
+static SceUID fdata_memblock = 0;
+static SceUID fb_memblock = 0;
 
 static inline uint16_t *monorale_frame(monorale_hdr *hdr, size_t frame)
 {
@@ -40,35 +49,71 @@ void monorale_doframe(monorale_hdr *hdr, size_t frame, uint16_t *fb)
 
 monorale_hdr *monorale_init(const char *path)
 {
-	printf("Monorale INIT\n");
-	size_t monolen;
-	monorale_hdr *ret;
-	FILE *f = fopen(path, "rb");
-	if (f == NULL) return NULL;
-
-	fseek(f, 0L, SEEK_END);
-	monolen = ftell(f);
-	fseek(f, 0L, SEEK_SET);
-	printf("Hello %08x\n",monolen);
-	ret = malloc(monolen);
-	if (ret != NULL)
-		fread(ret, monolen, 1, f);
-
-	fclose(f);
-	return ret;
+	// Allocate needed memory
+	monorale_hdr *monorale_base = NULL;
+	SceIoStat stat;
+	uint32_t memBlockSize = 0;
+	if(sceIoGetstat(path,&stat) < 0) {
+		return NULL;
+	}
+	sceClibPrintf("%s=%lldB\n",path,stat.st_size);
+	memBlockSize = (((uint32_t)stat.st_size & 0xFFFFF000)+0x1000);
+	sceClibPrintf("Need Allocate 0x%XB\n",memBlockSize);
+	if(allocMemory(memBlockSize) < 0) {
+		// Alloc Failed!!!
+		sceClibPrintf("memory allocation failed???\n");
+		return NULL;
+	}
+	sceKernelGetMemBlockBase(fdata_memblock,(void**)&monorale_base);
+	sceClibPrintf("memblock_base 0x%x",monorale_base);
+	SceUID fd = sceIoOpen(path, SCE_O_RDONLY, 0777);
+	if(fd < 0) {
+		sceClibPrintf("File Opening failed!???\n");
+		return NULL;
+	}
+	sceIoRead(fd,monorale_base, stat.st_size);
+	sceIoClose(fd);
+	return monorale_base;
+	
 }
+
+int allocMemory(uint32_t monolen) {
+	sceClibPrintf("Allocating Memory right now.\n");
+	SceKernelAllocMemBlockOpt fbmOpt;
+	memset(&fbmOpt,0,sizeof(SceKernelAllocMemBlockOpt)); //Nullify
+	fbmOpt.size = sizeof(fbmOpt);
+	fbmOpt.attr = 4;
+	fbmOpt.alignment = 256*1024;
+	fb_memblock = sceKernelAllocMemBlock("FrameBuffer CDRAM",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000, &fbmOpt);
+	sceClibPrintf("fb_memblock 0x%x\n",fb_memblock);
+	fdata_memblock = sceKernelAllocMemBlock("FrameData UMEM",SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,monolen, NULL);
+	sceClibPrintf("fdata_memblock 0x%x\n",fdata_memblock);
+	if(fb_memblock < 0) {
+		return fb_memblock;
+	}
+	if(fdata_memblock < 0) {
+		return fdata_memblock;
+	}
+	return 0;
+}
+
+
+int monorale_deinit(){
+	if(fb_memblock > 0) {
+		sceKernelFreeMemBlock(fb_memblock);
+	}
+	if(fdata_memblock > 0) {
+		sceKernelFreeMemBlock(fdata_memblock);
+	}
+	return 0; // always success.
+}
+
+
 
 int monoraleThread(SceSize args, void *argp) {
 	printf("I'm in.\n");
 	void* base;
-	SceKernelAllocMemBlockOpt opt = {0};
-	opt.size = sizeof(opt);
-	opt.attr = 0x00000004;
-	opt.alignment = DISPLAY_WIDTH*DISPLAY_HEIGHT*2;
-	SceUID memb = sceKernelAllocMemBlock("fb",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000,&opt);
-	sceKernelGetMemBlockBase(memb,&base);
-	printf("malloc completed!\n");
-	
+	sceKernelGetMemBlockBase(fb_memblock,&base);
 	SceDisplayFrameBuf buf;
 	memset(&buf,0, sizeof(SceDisplayFrameBuf));
        	buf.size = sizeof(SceDisplayFrameBuf);
@@ -86,29 +131,15 @@ int monoraleThread(SceSize args, void *argp) {
 	printf("%d frames\n",monorale_frames(hdr));
 	printf("baseaddr=%p\n",base);
 	while(frame < monorale_frames(hdr)) {
-		printf("frame start\n");
-		//sceDisplayWaitVblankStart();
-		//sceDisplayWaitVblankStart();
-		//sceDisplayWaitSetFrameBuf();
-		/*
-		if(sceDisplayWaitVblankStart()){
-			printf("Error on DisplayWaitVblankStart()???\n");
-			break;
-		}
-		*/
-		//sceDisplayGetFrameBuf(buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
 		monorale_doframe(hdr,frame++,(uint16_t*)base);
-		//printf("frame monorale\n");
 		if(sceDisplaySetFrameBuf(&buf,0)){
 			printf("Error on sceDisplaySetFrameBuf()\n");
 			break;
 		}
-		//frame++;
+		frame++;
 		//sceDisplayWaitSetFrameBuf();
-		sceDisplayWaitVblankStart();
+		sceDisplayWaitVblankStart(); //problematic on Vita3K.
 	}
-	sceKernelCloseMemBlock(memb);
-
 	return 0;
 }
 

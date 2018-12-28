@@ -18,3 +18,5 @@ static inline size_t monorale_frames(monorale_hdr *hdr) {
 
 monorale_hdr *monorale_init(const char *path);
 int monoraleThread(SceSize args,void *argp);
+int allocMemory(uint32_t size);
+int monorale_deinit();
