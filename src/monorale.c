@@ -59,7 +59,7 @@ void monorale_doframe(monorale_hdr *hdr, size_t frame, uint32_t *fb)
 	//printf("%d\n",cmdcnt);
 	for (size_t i = 0; i < cmdcnt; i++) {
 		size_t len_px = cmds[i];
-		memset(fb, fill_val, len_px << 1);
+		memset(fb, fill_val, len_px << 2);
 		//printf("memset\n");
 		fb += len_px;
 		fill_val ^= 0xFFFFFFFF; 
@@ -148,6 +148,7 @@ int monoraleThread(SceSize args, void *argp) {
 	bufR = bufL;
 	bufR.base = base[1];
 
+
 	//SceDisplayFrameBuf bufR;
 	//buf.height = 640;
 	//sceDisplaySetFrameBuf(&buf,SCE_DISPLAY_SETBUF_IMMEDIATE);
@@ -159,15 +160,12 @@ int monoraleThread(SceSize args, void *argp) {
 	printf("%d frames\n",monorale_frames(hdr));
 	printf("baseaddrL=%p\n",base[0]);
 	printf("baseaddrR=%p\n",base[1]);
+	SceDisplayFrameBuf* disp = NULL;
 	while(frame < monorale_frames(hdr)) {
-		//printf("f:%d\n",frame);
-		monorale_doframe(hdr,frame,frame%2==0?(uint32_t*)bufL.base:(uint32_t*)bufR.base);
-		if(sceDisplaySetFrameBuf(frame%2==0?&bufL:&bufR,1)){
-			printf("Error on sceDisplaySetFrameBuf()\n");
-			break;
-		}
+		disp = ((frame%2)==0)?&bufL:&bufR;
+		monorale_doframe(hdr,frame,disp->base);
+		sceDisplaySetFrameBuf(disp,1);
 		frame++;
-		//sceDisplayWaitSetFrameBuf();
 		sceDisplayWaitVblankStart(); //problematic on Vita3K.
 	}
 	return 0;
