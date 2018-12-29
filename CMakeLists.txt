@@ -47,8 +47,8 @@ vita_create_vpk(
 	VERSION ${VITA_VERSION}
 	NAME ${VITA_APP_NAME}
 	FILE bin/monorale.bin monorale.bin	
-	FILE src/sce_sys/icon0.png sce_sys/icon0.png
-	FILE src/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
-	FILE src/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
-	FILE src/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
+	FILE bin/sce_sys/icon0.png sce_sys/icon0.png
+	FILE bin/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
+	FILE bin/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
+	FILE bin/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
 )
