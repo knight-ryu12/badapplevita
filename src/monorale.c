@@ -97,7 +97,7 @@ int allocMemory(uint32_t monolen) {
 	fbmOpt.size = sizeof(fbmOpt);
 	fbmOpt.attr = 4;
 	fbmOpt.alignment = 256*1024;
-	fb_memblock_L = sceKernelAllocMemBlock("FrameBuffer CDRAM L",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000,&fbmOpt);
+	fb_memblock = sceKernelAllocMemBlock("FrameBuffer CDRAM",SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,0x200000,&fbmOpt);
 	sceClibPrintf("fb_memblockL 0x%x\n",fb_memblock);
 	fdata_memblock = sceKernelAllocMemBlock("FrameData UMEM",SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,monolen, NULL);
 	sceClibPrintf("fdata_memblock 0x%x\n",fdata_memblock);
@@ -122,7 +122,7 @@ int monoraleThread(SceSize args, void *argp) {
 	SceDisplayFrameBuf buf;
 	memset(&buf,0,sizeof(SceDisplayFrameBuf));
        	buf.size = sizeof(SceDisplayFrameBuf);
-	buf.base = base[0];
+	buf.base = base;
 	buf.pitch = 640;
 	buf.pixelformat = 0;
 	buf.width = 640;
@@ -133,12 +133,11 @@ int monoraleThread(SceSize args, void *argp) {
 	monorale_hdr *hdr = *tmp;
 	printf("Render Lv2\n");
 	printf("%d frames\n",monorale_frames(hdr));
-	printf("baseaddrL=%p\n",base[0]);
-	printf("baseaddrR=%p\n",base[1]);
+	printf("baseaddr=%p\n",base);
 	SceDisplayFrameBuf* disp = NULL;
 	while(frame < monorale_frames(hdr)) {
 		monorale_doframe(hdr,frame,buf.base);
-		sceDisplaySetFrameBuf(&buf,1)
+		sceDisplaySetFrameBuf(&buf,1);
 		frame++;
 		sceDisplayWaitVblankStart(); //problematic on Vita3K.
 	}
