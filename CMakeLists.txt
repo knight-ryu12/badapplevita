@@ -15,7 +15,7 @@ set(VITA_APP_NAME "Bad Apple Vita!!!")
 set(VITA_TITLEID "BADA00001")
 set(VITA_VERSION "01.00")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g3")
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d PARENTAL_LEVEL=1")
 
 link_directories(
