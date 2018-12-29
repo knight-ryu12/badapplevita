@@ -162,9 +162,18 @@ int monoraleThread(SceSize args, void *argp) {
 	printf("baseaddrR=%p\n",base[1]);
 	SceDisplayFrameBuf* disp = NULL;
 	while(frame < monorale_frames(hdr)) {
+<<<<<<< Updated upstream
 		//disp = ((frame%2)==0)?&bufL:&bufR;
 		monorale_doframe(hdr,frame,bufL.base);
 		sceDisplaySetFrameBuf(&bufL,1);
+=======
+		printf("f:%d\n",frame);
+		monorale_doframe(hdr,frame,(uint16_t*)base);
+		if(sceDisplaySetFrameBuf(&buf,1)){
+			printf("Error on sceDisplaySetFrameBuf()\n");
+			break;
+		}
+>>>>>>> Stashed changes
 		frame++;
 		sceDisplayWaitVblankStart(); //problematic on Vita3K.
 	}
