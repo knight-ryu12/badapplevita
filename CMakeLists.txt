@@ -46,7 +46,8 @@ vita_create_vpk(
 	badapple_VITA.vpk ${VITA_TITLEID} badapple_VITA.self
 	VERSION ${VITA_VERSION}
 	NAME ${VITA_APP_NAME}
-	FILE bin/monorale.bin monorale.bin	
+	FILE bin/monorale.bin monorale.bin
+	FILE bin/badapple.ogg badapple.ogg	
 	FILE bin/sce_sys/icon0.png sce_sys/icon0.png
 	FILE bin/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
 	FILE bin/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
