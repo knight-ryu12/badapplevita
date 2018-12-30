@@ -29,6 +29,7 @@ add_executable(badapplevita
 )
 
 target_link_libraries(badapplevita
+	SceAppMgr_stub
 	SceDisplay_stub
 	SceAudio_stub
 	vorbisenc
@@ -39,11 +40,11 @@ target_link_libraries(badapplevita
 )
 
 vita_create_self(
-	badapple_VITA.self badapplevita
+	eboot.bin badapplevita
 )
 
 vita_create_vpk(
-	badapple_VITA.vpk ${VITA_TITLEID} badapple_VITA.self
+	badapple_VITA.vpk ${VITA_TITLEID} eboot.bin
 	VERSION ${VITA_VERSION}
 	NAME ${VITA_APP_NAME}
 	FILE bin/monorale.bin monorale.bin
