@@ -58,7 +58,7 @@ int SoundReady(){
 	printf("SoundReady()\n");
 	while(sound_ready){}
 
-	sceKernelDelayThread(600 * 1000);
+	sceKernelDelayThread(700 * 1000);
 	printf("SoundReady() end\n");
 
 	return 0;
