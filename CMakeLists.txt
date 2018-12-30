@@ -15,7 +15,7 @@ set(VITA_APP_NAME "Bad Apple Vita!!!")
 set(VITA_TITLEID "BADA00001")
 set(VITA_VERSION "01.00")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g3")
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d PARENTAL_LEVEL=1")
 
 link_directories(
@@ -46,9 +46,10 @@ vita_create_vpk(
 	badapple_VITA.vpk ${VITA_TITLEID} badapple_VITA.self
 	VERSION ${VITA_VERSION}
 	NAME ${VITA_APP_NAME}
-	FILE bin/monorale.bin monorale.bin	
-	FILE src/sce_sys/icon0.png sce_sys/icon0.png
-	FILE src/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
-	FILE src/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
-	FILE src/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
+	FILE bin/monorale.bin monorale.bin
+	FILE bin/badapple.ogg badapple.ogg	
+	FILE bin/sce_sys/icon0.png sce_sys/icon0.png
+	FILE bin/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
+	FILE bin/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
+	FILE bin/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
 )
