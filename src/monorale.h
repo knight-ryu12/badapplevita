@@ -20,3 +20,5 @@ monorale_hdr *monorale_init(const char *path);
 int monoraleThread(SceSize args,void *argp);
 int allocMemory(uint32_t size);
 int monorale_deinit();
+int VideoReady();
+int VideoPlayGo();
